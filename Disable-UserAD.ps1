@@ -41,7 +41,7 @@ function Disable-MOHPUser([parameter (Mandatory=$true, HelpMessage='Введит
         
         function Send-MailMess {
             param($mailAdmins)
-            Send-MailMessage -SmtpServer HD-MAIL -To "$mailAdmins" -From 'admin@hydroproject.com' -Subject "$nameMUser уволен" -Body "Пользователь $nameMUser уволен.`nПочтовый ящик скрыт из адрессной книги.`nУчетная запись перенесена в группу: Уволенные сотрудники.`n`nСообщение создано автоматически, отвечать на него не нужно!" -Encoding 'UTF8'
+            Send-MailMessage -SmtpServer HD-MAIL -To "$mailAdmins" -From 'admin@hydroproject.com' -Subject "Увольнение" -Body "Пользователь $nameMUser уволен.`nПочтовый ящик скрыт из адрессной книги.`nУчетная запись перенесена в группу: Уволенные сотрудники.`n`nСообщение создано автоматически, отвечать на него не нужно!" -Encoding 'UTF8'
         }
 
         #Подключиться к удаленному серверу Exchange
