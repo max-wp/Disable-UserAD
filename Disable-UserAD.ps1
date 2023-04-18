@@ -12,6 +12,7 @@ function Disable-MOHPUser([parameter (Mandatory=$true, HelpMessage='Введит
 
     $MUser = Get-ADUser -filter "(Name -like '$search_ADName') -or (extensionAttribute1 -like '$search_ADName') -or (SamAccountName -like '$search_ADName')" -SearchBase "$search_base" -Properties * | Select-Object Name, Enabled, extensionAttribute1, Department, title, SamAccountName, distinguishedName, mailNickname, description
     
+    $nameMUser = $MUser.Name
     if (-not $MUser){
     
         Write-Host 'Пользователь не найден' -ForegroundColor 'Red'
@@ -25,40 +26,48 @@ function Disable-MOHPUser([parameter (Mandatory=$true, HelpMessage='Введит
         $Muser
         Write-Host "Для точной идентификации введите табельный номер или логин отключаемого пользователя" -ForegroundColor 'Red'
         exit
-
     }
-    
+
     #Отключаем учетную запись
     Disable-ADAccount -Identity $MUser.SamAccountName# -Confirm
-    
     #Переносим объект учетной записи в новый контейнер - Уволившиеся сотрудники
     Move-ADObject -Identity $MUser.distinguishedName -TargetPath $targetOU
-    Set-ADUser $MUser.SamAccountName -Add @{description="Уволен $dateStr"}
-
+    #Заменяем описание
+    Set-ADUser $MUser.SamAccountName -Replace @{description="Уволен $dateStr"}
+    
     #Почта
-
     function Connect-mailServer{
         param($nikMailHide)
+        
         function Send-MailMess {
-            Send-MailMessage -SmtpServer HD-MAIL -To 'TulpakovMS@hydroproject.com, Korneevvv@hydroproject.com' -From 'admin@hydroproject.com' -Subject "$nikMailHide уволен" -Body "Пользователь $nikMailHide уволен. Сообщение создано автоматически, отвечать на него не нужно!" -Encoding 'UTF8'
+            param($mailAdmins)
+            Send-MailMessage -SmtpServer HD-MAIL -To "$mailAdmins" -From 'admin@hydroproject.com' -Subject "$nameMUser уволен" -Body "Пользователь $nameMUser уволен.`nПочтовый ящик скрыт из адрессной книги.`nУчетная запись перенесена в группу: Уволенные сотрудники.`n`nСообщение создано автоматически, отвечать на него не нужно!" -Encoding 'UTF8'
         }
 
         #Подключиться к удаленному серверу Exchange
-        $UserCredential = Get-Credential
-    
-        $Session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri http://hd-mail.mohp.ru/PowerShell/ -Authentication Kerberos -Credential $UserCredential
-    
+        $envUserName = $env:UserName
+        $currentUser = "mohp.ru\$envUserName"
+        if($UserCredential -eq $fulse){
+            $global:UserCredential = Get-Credential -Credential $currentUser
+        }
+        
+        $Session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri 'http://hd-mail.mohp.ru/PowerShell/' -Authentication Kerberos -Credential $UserCredential
+
         Import-PSSession $Session -DisableNameChecking
         
-        #Скрываем ящик на сервере
-        Set-Mailbox $nikMailHide -HiddenFromAddressListsEnabled $True
+        #Скрываем ящик на сервере, если у учетной записи он существует
+        $userMailbox = Get-Mailbox $nikMailHide
 
+        if ($userMailbox -eq $false){
+            Set-Mailbox $nikMailHide -HiddenFromAddressListsEnabled $True
+        }
         #Обязательное завершение сессии
         Remove-PSSession $Session
 
-        Send-MailMess
+        Send-MailMess 'TulpakovMS@hydroproject.com'#, Korneevvv@hydroproject.com
 
     }
+
     Connect-mailServer $MUser.mailNickname
 
     #Диагностическое сообщение об успешности операции
@@ -66,5 +75,4 @@ function Disable-MOHPUser([parameter (Mandatory=$true, HelpMessage='Введит
     $null = $MUser
     $MUser = Get-ADUser -filter "(Name -like '$search_ADName') -or (extensionAttribute1 -like '$search_ADName') -or (SamAccountName -like '$search_ADName')" -SearchBase "$search_base" -Properties * | Select-Object Name, Enabled, description, distinguishedName
     $MUser
-    
 }
