@@ -61,22 +61,31 @@ function Disable-MOHPUser([parameter (Mandatory=$true, HelpMessage='Введит
         }
         
         $Session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri 'http://hd-mail.mohp.ru/PowerShell/' -Authentication Kerberos -Credential $UserCredential
-
+        $stateSes = $Session.State
         Import-PSSession $Session -DisableNameChecking
-        
-        #Операции выполняемые на сервере Exchange
-        Set-SettingsMailBox $MUser.mailNickname
-        Send-MailMess 'TulpakovMS@hydroproject.com'#, Korneevvv@hydroproject.com       
-        
-        #Обязательное завершение сессии
-        Remove-PSSession $Session
-    }
+        Write-Host "Статус соединения с почтовым сервером: Session-state: $stateSes" -ForegroundColor Green
 
+        #Операции выполняемые на сервере Exchange
+        #Set-SettingsMailBox $MUser.mailNickname
+        #Send-MailMess 'TulpakovMS@hydroproject.com'#, Korneevvv@hydroproject.com
+ 
+    }
+    function Disconnect-mailServer {
+        $Session = Get-PSSession
+        Remove-PSSession $Session
+        $stateSes = $Session.State
+        Write-Host "Статус соединения с почтовым сервером: Session-state: $stateSes" -ForegroundColor Red
+    }
     Connect-mailServer 
+    
 
     #Диагностическое сообщение об успешности операции
-    Write-Host 'Учетная запись отключена' -ForegroundColor Green
+    Write-Host "`nУчетная запись отключена" -ForegroundColor Green
     $null = $MUser
     $MUser = Get-ADUser -filter "(Name -like '$search_ADName') -or (extensionAttribute1 -like '$search_ADName') -or (SamAccountName -like '$search_ADName')" -SearchBase "$search_base" -Properties * | Select-Object Name, Enabled, description, distinguishedName
     $MUser
+
+    #Обязательно закрываем сессию с почтовым сервером при запуске скрипта. С открытой сессией данная фукнция уже не видна
+    Disconnect-mailServer
+
 }
