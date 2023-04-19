@@ -36,15 +36,24 @@ function Disable-MOHPUser([parameter (Mandatory=$true, HelpMessage='Введит
     Set-ADUser $MUser.SamAccountName -Replace @{description="Уволен $dateStr"}
     
     #Почта
-    function Connect-mailServer{
-        param($nikMailHide)
-        
-        function Send-MailMess {
-            param($mailAdmins)
-            Send-MailMessage -SmtpServer HD-MAIL -To "$mailAdmins" -From 'admin@hydroproject.com' -Subject "Увольнение" -Body "Пользователь $nameMUser уволен.`nПочтовый ящик скрыт из адрессной книги.`nУчетная запись перенесена в группу: Уволенные сотрудники.`n`nСообщение создано автоматически, отвечать на него не нужно!" -Encoding 'UTF8'
-        }
+    function Send-MailMess {
+        param($mailAdmins)
+        Send-MailMessage -SmtpServer HD-MAIL -To "$mailAdmins" -From 'admin@hydroproject.com' -Subject "Увольнение" -Body "Пользователь $nameMUser уволен.`nПочтовый ящик скрыт из адрессной книги.`nУчетная запись перенесена в группу: Уволенные сотрудники.`n`nСообщение создано автоматически, отвечать на него не нужно!" -Encoding 'UTF8'
+    }
+    function Set-SettingsMailBox {
+        param (
+            $nikMailHide
+        )
+        #Скрываем ящик на сервере, если у учетной записи он существует
+        $userMailbox = Get-Mailbox $nikMailHide
 
-        #Подключиться к удаленному серверу Exchange
+        if ($userMailbox -eq $false){
+            Set-Mailbox $nikMailHide -HiddenFromAddressListsEnabled $True
+        }
+    }
+    function Connect-mailServer{
+
+        #Подключаемся к удаленному серверу Exchange
         $envUserName = $env:UserName
         $currentUser = "mohp.ru\$envUserName"
         if($UserCredential -eq $fulse){
@@ -55,20 +64,15 @@ function Disable-MOHPUser([parameter (Mandatory=$true, HelpMessage='Введит
 
         Import-PSSession $Session -DisableNameChecking
         
-        #Скрываем ящик на сервере, если у учетной записи он существует
-        $userMailbox = Get-Mailbox $nikMailHide
-
-        if ($userMailbox -eq $false){
-            Set-Mailbox $nikMailHide -HiddenFromAddressListsEnabled $True
-        }
+        #Операции выполняемые на сервере Exchange
+        Set-SettingsMailBox $MUser.mailNickname
+        Send-MailMess 'TulpakovMS@hydroproject.com'#, Korneevvv@hydroproject.com       
+        
         #Обязательное завершение сессии
         Remove-PSSession $Session
-
-        Send-MailMess 'TulpakovMS@hydroproject.com'#, Korneevvv@hydroproject.com
-
     }
 
-    Connect-mailServer $MUser.mailNickname
+    Connect-mailServer 
 
     #Диагностическое сообщение об успешности операции
     Write-Host 'Учетная запись отключена' -ForegroundColor Green
