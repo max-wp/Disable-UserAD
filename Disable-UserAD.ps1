@@ -66,8 +66,8 @@ function Disable-MOHPUser([parameter (Mandatory=$true, HelpMessage='Введит
         Write-Host "Статус соединения с почтовым сервером: Session-state: $stateSes" -ForegroundColor Green
 
         #Операции выполняемые на сервере Exchange
-        #Set-SettingsMailBox $MUser.mailNickname
-        #Send-MailMess 'TulpakovMS@hydroproject.com'#, Korneevvv@hydroproject.com
+        Set-SettingsMailBox $MUser.mailNickname
+        Send-MailMess 'TulpakovMS@hydroproject.com, Korneevvv@hydroproject.com'
  
     }
     function Disconnect-mailServer {
@@ -76,7 +76,7 @@ function Disable-MOHPUser([parameter (Mandatory=$true, HelpMessage='Введит
         $stateSes = $Session.State
         Write-Host "Статус соединения с почтовым сервером: Session-state: $stateSes" -ForegroundColor Red
     }
-    Connect-mailServer 
+    Connect-mailServer
     
 
     #Диагностическое сообщение об успешности операции
