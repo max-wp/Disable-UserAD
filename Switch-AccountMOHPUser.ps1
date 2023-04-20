@@ -2,6 +2,7 @@
     Param($adminUser)
     #Подключаемся к удаленному серверу Exchange
     $Session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri 'http://hd-mail.mohp.ru/PowerShell/' -Authentication Kerberos -Credential $adminUser
+
     $stateSes = $Session.State
     Import-PSSession $Session -DisableNameChecking
     Write-Host "Статус соединения с почтовым сервером: Session-state: $stateSes"
@@ -20,13 +21,15 @@ function Test-MOHPAccount{
         #Учетная запись
         $envUserName = $env:UserName
         $currentUser = "mohp.ru\$envUserName"
-        $UserCredential = Get-Credential -Credential $currentUser -ErrorAction Stop
+        #Если ввод данных был проигнорирован
+        if($UserCredential -eq $null){
+        $global:UserCredential = Get-Credential -Credential $currentUser -ErrorAction Stop
         Connect-mailServer $UserCredential
-
+        }
         #Операции выполняемые на сервере Exchange
-        Set-SettingsMailBox $MUser.mailNickname
-        Send-MailMess 'TulpakovMS@hydroproject.com'
-        Send-MailMess  'Korneevvv@hydroproject.com'
+        #Set-SettingsMailBox $MUser.mailNickname
+        #Send-MailMess 'TulpakovMS@hydroproject.com'
+        #Send-MailMess  'Korneevvv@hydroproject.com'
 
     } catch {
     
