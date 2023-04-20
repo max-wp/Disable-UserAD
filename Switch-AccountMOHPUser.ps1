@@ -22,7 +22,7 @@ function Test-MOHPAccount{
         $envUserName = $env:UserName
         $currentUser = "mohp.ru\$envUserName"
         #Если ввод данных был проигнорирован
-        if($UserCredential -eq $null){
+        if( $null -eq $UserCredential){
         $global:UserCredential = Get-Credential -Credential $currentUser -ErrorAction Stop
         Connect-mailServer $UserCredential
         }
