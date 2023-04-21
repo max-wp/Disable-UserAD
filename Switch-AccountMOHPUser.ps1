@@ -107,9 +107,14 @@ function Disable-MOHPUser([parameter (Mandatory=$true, HelpMessage='Введит
     Set-PropertiesAD
     Connect-MOHPmailServer
     #Операции выполняемые на сервере Exchange
-    #Set-PropertiesMailBox $MUser.mailNickname
-    #Send-MailMess 'TulpakovMS@hydroproject.com'
-    #Send-MailMess  'Korneevvv@hydroproject.com'
+    Set-PropertiesMailBox $MUser.mailNickname
+    
+    #Отправка сообщений
+    switch ($env:UserName) {
+        'oit_tulpakov' {Send-MailMess  'Korneevvv@hydroproject.com'}
+        'oit_korneev' {Send-MailMess  'TulpakovMS@hydroproject.com'}
+        Default {Send-MailMess  'Korneevvv@hydroproject.com'; Send-MailMess  'TulpakovMS@hydroproject.com'}
+    }
 
     #Диагностическое сообщение об успешности операции
     Write-Host "`nУчетная запись отключена" -ForegroundColor Green
@@ -178,8 +183,14 @@ function Enable-MOHPUser([parameter (Mandatory=$true, HelpMessage='Введит�
     Connect-MOHPmailServer
     #Операции выполняемые на сервере Exchange
     Set-PropertiesMailBox $MUser.mailNickname
-    #Send-MailMess 'TulpakovMS@hydroproject.com'
-    #Send-MailMess  'Korneevvv@hydroproject.com'
+    
+    #Отправка сообщений
+    switch ($env:UserName) {
+        'oit_tulpakov' {Send-MailMess  'Korneevvv@hydroproject.com'}
+        'oit_korneev' {Send-MailMess  'TulpakovMS@hydroproject.com'}
+        Default {Send-MailMess  'Korneevvv@hydroproject.com'; Send-MailMess  'TulpakovMS@hydroproject.com'}
+    }
+
 
     #Диагностическое сообщение об успешности операции
     Write-Host "`nУчетная запись включена" -ForegroundColor Green
