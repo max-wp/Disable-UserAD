@@ -1,44 +1,55 @@
 ﻿function Connect-MOHPmailServer{
-    Param($adminUser)
-    #Подключаемся к удаленному серверу Exchange
-    $Session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri 'http://hd-mail.mohp.ru/PowerShell/' -Authentication Kerberos -Credential $adminUser
 
-    $stateSes = $Session.State
-    Import-PSSession $Session -DisableNameChecking
-    Write-Host "Статус соединения с почтовым сервером: Session-state: $stateSes"
+    try {
+
+    #Если учетные данные еще не вводились, запрашиваем их
+    if( $null -eq $UserCredential){
+        #Учетная запись
+        $envUserName = $env:UserName
+        $currentUser = "mohp.ru\$envUserName"
+        $global:UserCredential = Get-Credential -Credential $currentUser -ErrorAction Stop
+    }
+
+    #Подключаемся к серверу Exchange если нет открытых сессий
+    if ($($Session.State) -eq 'Closed' -or $null -eq $Session){
+        $Global:Session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri 'http://hd-mail.mohp.ru/PowerShell/' -Authentication Kerberos -Credential $UserCredential -ErrorAction Stop
+        $stateSes = $Session.State
+    }
+    
+    if($stateSes -eq 'Opened'){
+        Import-PSSession $Session -DisableNameChecking > $null
+    }
+    if ($null -eq $($Session.State)){
+        Write-Host "Статус соединения с почтовым сервером: Сервер не найден!"
+        exit
+    }
+    Write-Host "Статус соединения с почтовым сервером: Session-state: $($Session.State)"
+
+    
+} catch {
+    
+        #OUTPUT
+        $global:UserCredential = $null
+        Write-Host "Ошибка: Неверное имя пользователя или пароль" -ForegroundColor 'Red'
+        Write-Host "Детали ошибки: $_.Exception.Message"
+        exit
+    }
 }
+
+#Закрывает все открытые сессии
 function Disconnect-MOHPmailServer {
 
     $Session = Get-PSSession
+    if ($null -eq $Session){
+        Write-Host "Открытые подключения не найдены!"
+        exit
+    }
+
     Remove-PSSession $Session
     $stateSes = $Session.State
     Write-Host "Статус соединения с почтовым сервером: Session-state: $stateSes"
 }
 
-#ПРОВЕРКА на блокирующие ошибки
-function Test-MOHPAccount{
-    try {
-        #Учетная запись
-        $envUserName = $env:UserName
-        $currentUser = "mohp.ru\$envUserName"
-        #Если ввод данных был проигнорирован
-        if( $null -eq $UserCredential){
-        $global:UserCredential = Get-Credential -Credential $currentUser -ErrorAction Stop
-        Connect-mailServer $UserCredential
-        }
-        #Операции выполняемые на сервере Exchange
-        #Set-SettingsMailBox $MUser.mailNickname
-        #Send-MailMess 'TulpakovMS@hydroproject.com'
-        #Send-MailMess  'Korneevvv@hydroproject.com'
-
-    } catch {
-    
-        #OUTPUT
-        Write-Host "Ошибка: Неверное имя пользователя или пароль" -ForegroundColor 'Red'#$_.Exception.Message
-        Write-Host "Детали ошибки: $_.Exception.Message"
-        exit
-    }
-}
 
 #ОТКЛЮЧЕНИЕ УЧЕТНОЙ ЗАПИСИ УВОЛЕННОГО СОТРУДНИККА.
 function Disable-MOHPUser([parameter (Mandatory=$true, HelpMessage='Введите Фамилию, логин или табельный номер пользователя')][string]$ADNameUser){
@@ -92,7 +103,11 @@ function Disable-MOHPUser([parameter (Mandatory=$true, HelpMessage='Введит
         }
     }
 
-    Test-MOHPAccount
+    Connect-MOHPmailServer
+    #Операции выполняемые на сервере Exchange
+    #Set-SettingsMailBox $MUser.mailNickname
+    #Send-MailMess 'TulpakovMS@hydroproject.com'
+    #Send-MailMess  'Korneevvv@hydroproject.com'
 
     #Диагностическое сообщение об успешности операции
     Write-Host "`nУчетная запись отключена" -ForegroundColor Green
