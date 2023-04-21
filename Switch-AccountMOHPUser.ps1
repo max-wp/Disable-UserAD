@@ -31,7 +31,7 @@
         #OUTPUT
         $global:UserCredential = $null
         Write-Host "Ошибка: Неверное имя пользователя или пароль" -ForegroundColor 'Red'
-        Write-Host "Детали ошибки: $_.Exception.Message"
+        #Write-Host "Детали ошибки: $_.Exception.Message"
         exit
     }
 }
@@ -65,7 +65,7 @@ function Disable-MOHPUser([parameter (Mandatory=$true, HelpMessage='Введит
 
     $nameMUser = $MUser.Name
     if (-not $MUser){
-    
+
         Write-Host 'Пользователь не найден' -ForegroundColor 'Red'
         exit
     }
@@ -79,19 +79,20 @@ function Disable-MOHPUser([parameter (Mandatory=$true, HelpMessage='Введит
         exit
     }
 
-    #Отключаем учетную запись
-    Disable-ADAccount -Identity $MUser.SamAccountName# -Confirm
-    #Переносим объект учетной записи в новый контейнер - Уволившиеся сотрудники
-    Move-ADObject -Identity $MUser.distinguishedName -TargetPath $targetOU
-    #Заменяем описание
-    Set-ADUser $MUser.SamAccountName -Replace @{description="Уволен $dateStr"}
-    
+    function Set-PropertiesAD{
+        #Отключаем учетную запись
+        Disable-ADAccount -Identity $MUser.SamAccountName# -Confirm
+        #Переносим объект учетной записи в новый контейнер - Уволившиеся сотрудники
+        Move-ADObject -Identity $MUser.distinguishedName -TargetPath $targetOU
+        #Заменяем описание
+        Set-ADUser $MUser.SamAccountName -Replace @{description="Уволен $dateStr"}
+    }
     #Почта
     function Send-MailMess {
         param($mailAdmin)
         Send-MailMessage -SmtpServer HD-MAIL -To "$mailAdmin" -From 'admin@hydroproject.com' -Subject "Увольнение" -Body "Пользователь $nameMUser уволен.`nПочтовый ящик скрыт из адрессной книги.`nУчетная запись перенесена в группу: Уволенные сотрудники.`n`nСообщение создано автоматически, отвечать на него не нужно!" -Encoding 'UTF8' -ErrorAction Stop
     }
-    function Set-SettingsMailBox {
+    function Set-PropertiesMailBox {
         param (
             $nikMailHide
         )
@@ -103,9 +104,10 @@ function Disable-MOHPUser([parameter (Mandatory=$true, HelpMessage='Введит
         }
     }
 
+    Set-PropertiesAD
     Connect-MOHPmailServer
     #Операции выполняемые на сервере Exchange
-    #Set-SettingsMailBox $MUser.mailNickname
+    #Set-PropertiesMailBox $MUser.mailNickname
     #Send-MailMess 'TulpakovMS@hydroproject.com'
     #Send-MailMess  'Korneevvv@hydroproject.com'
 
@@ -115,7 +117,7 @@ function Disable-MOHPUser([parameter (Mandatory=$true, HelpMessage='Введит
     $MUser = Get-ADUser -filter "(Name -like '$search_ADName') -or (extensionAttribute1 -like '$search_ADName') -or (SamAccountName -like '$search_ADName')" -SearchBase "$search_base" -Properties * | Select-Object Name, Enabled, description, distinguishedName
     $MUser
 
-    #Обязательно закрываем сессию с почтовым сервером при запуске скрипта. С открытой сессией данная фукнция уже не видна
+    #Обязательно закрываем сессию с почтовым сервером
     Disconnect-MOHPmailServer
 
 }
@@ -148,20 +150,20 @@ function Enable-MOHPUser([parameter (Mandatory=$true, HelpMessage='Введит�
         Write-Host "Для точной идентификации пользователя введите табельный номер или логин, с повторным вызовом функции. `nПример: Disable-MOHPUser Пупкин" -ForegroundColor 'Red'
         exit
     }
-
-    #Включаем учетную запись
-    Enable-ADAccount -Identity $MUser.SamAccountName# -Confirm
-    #Переносим объект учетной записи в новый контейнер - Уволившиеся сотрудники
-    #Move-ADObject -Identity $MUser.distinguishedName -TargetPath $targetOU
-    #Заменяем описание
-    Set-ADUser $MUser.SamAccountName -Replace @{description="Принят $dateStr"}
-    
+    function Set-PropertiesAD{
+        #Включаем учетную запись
+        Enable-ADAccount -Identity $MUser.SamAccountName# -Confirm
+        #Переносим объект учетной записи в новый контейнер - Уволившиеся сотрудники
+        #Move-ADObject -Identity $MUser.distinguishedName -TargetPath $targetOU
+        #Заменяем описание
+        Set-ADUser $MUser.SamAccountName -Replace @{description="Принят $dateStr"}
+    }
     #Почта
     function Send-MailMess {
         param($mailAdmin)
         Send-MailMessage -SmtpServer HD-MAIL -To "$mailAdmin" -From 'admin@hydroproject.com' -Subject "Возвращение ранее уволенного" -Body "Пользователь $nameMUser восстановлен`nПочтовый ящик возвращен в адрессную книгу.`n`nСообщение создано автоматически, отвечать на него не нужно!" -Encoding 'UTF8' -ErrorAction Stop
     }
-    function Set-SettingsMailBox {
+    function Set-PropertiesMailBox {
         param (
             $nikMailHide
         )
@@ -172,8 +174,12 @@ function Enable-MOHPUser([parameter (Mandatory=$true, HelpMessage='Введит�
             Set-Mailbox $nikMailHide -HiddenFromAddressListsEnabled $false
         }
     }
-
-    Test-MOHPAccount
+    Set-PropertiesAD
+    Connect-MOHPmailServer
+    #Операции выполняемые на сервере Exchange
+    Set-PropertiesMailBox $MUser.mailNickname
+    #Send-MailMess 'TulpakovMS@hydroproject.com'
+    #Send-MailMess  'Korneevvv@hydroproject.com'
 
     #Диагностическое сообщение об успешности операции
     Write-Host "`nУчетная запись включена" -ForegroundColor Green
@@ -181,6 +187,6 @@ function Enable-MOHPUser([parameter (Mandatory=$true, HelpMessage='Введит�
     $MUser = Get-ADUser -filter "(Name -like '$search_ADName') -or (extensionAttribute1 -like '$search_ADName') -or (SamAccountName -like '$search_ADName')" -SearchBase "$search_base" -Properties * | Select-Object Name, Enabled, description, distinguishedName
     $MUser
 
-    #Обязательно закрываем сессию с почтовым сервером при запуске скрипта. С открытой сессией данная фукнция уже не видна
+    #Обязательно закрываем сессию с почтовым сервером
     Disconnect-MOHPmailServer
 }
