@@ -98,7 +98,7 @@
         #Почта
         function Send-MailMess {
             param($mailAdmin)
-            Send-MailMessage -SmtpServer HD-MAIL -To "$mailAdmin" -From 'admin@hydroproject.com' -Subject "Увольнение" -Body "Пользователь $nameMUser уволен.`nПочтовый ящик скрыт из адрессной книги.`nУчетная запись перенесена в группу: Уволенные сотрудники.`n`nСообщение создано автоматически, отвечать на него не нужно!" -Encoding 'UTF8' -ErrorAction Stop
+            Send-MailMessage -SmtpServer HD-MAIL -To "$mailAdmin" -From 'admin@hydroproject.com' -Subject "Увольнение" -Body "Пользователь $nameMUser уволен.`nПочтовый ящик скрыт в адресной книги.`nУчетная запись перенесена в группу: Уволенные сотрудники.`n`nСообщение создано автоматически, отвечать на него не нужно!" -Encoding 'UTF8' -ErrorAction Stop
         }
         function Set-PropertiesMailBox {
             param (
@@ -174,7 +174,7 @@
         #Почта
         function Send-MailMess {
             param($mailAdmin)
-            Send-MailMessage -SmtpServer HD-MAIL -To "$mailAdmin" -From 'admin@hydroproject.com' -Subject "Возвращение ранее уволенного" -Body "Пользователь $nameMUser восстановлен`nПочтовый ящик возвращен в адрессную книгу.`n`nСообщение создано автоматически, отвечать на него не нужно!" -Encoding 'UTF8' -ErrorAction Stop
+            Send-MailMessage -SmtpServer HD-MAIL -To "$mailAdmin" -From 'admin@hydroproject.com' -Subject "Возвращение ранее уволенного" -Body "Пользователь $nameMUser восстановлен`nПочтовый ящик возвращен в адресную книгу.`n`nСообщение создано автоматически, отвечать на него не нужно!" -Encoding 'UTF8' -ErrorAction Stop
         }
         function Set-PropertiesMailBox {
             param (
