@@ -93,12 +93,12 @@
             #Переносим объект учетной записи в новый контейнер - Уволившиеся сотрудники
             Move-ADObject -Identity $MUser.distinguishedName -TargetPath $targetOU
             #Заменяем описание
-            Set-ADUser $MUser.SamAccountName -Replace @{description="Уволен $dateStr"}
+            Set-ADUser $MUser.SamAccountName -Replace @{description="Перенесена в группу уволенных $dateStr"}
         }
         #Почта
         function Send-MailMess {
             param($mailAdmin)
-            Send-MailMessage -SmtpServer HD-MAIL -To "$mailAdmin" -From 'admin@hydroproject.com' -Subject "Увольнение" -Body "Пользователь $nameMUser уволен.`nПочтовый ящик скрыт в адресной книги.`nУчетная запись перенесена в группу: Уволенные сотрудники.`n`nСообщение создано автоматически, отвечать на него не нужно!" -Encoding 'UTF8' -ErrorAction Stop
+            Send-MailMessage -SmtpServer HD-MAIL -To "$mailAdmin" -From 'admin@hydroproject.com' -Subject "Увольнение" -Body "Пользователь $nameMUser уволен.`nПочтовый ящик скрыт в адресной книге.`nУчетная запись перенесена в группу: Уволенные сотрудники.`n`nСообщение создано автоматически, отвечать на него не нужно!" -Encoding 'UTF8' -ErrorAction Stop
         }
         function Set-PropertiesMailBox {
             param (
