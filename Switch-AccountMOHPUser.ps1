@@ -169,7 +169,7 @@
             #Переносим объект учетной записи в новый контейнер - Уволившиеся сотрудники
             #Move-ADObject -Identity $MUser.distinguishedName -TargetPath $targetOU
             #Заменяем описание
-            Set-ADUser $MUser.SamAccountName -Replace @{description="Принят $dateStr"}
+            Set-ADUser $MUser.SamAccountName -Replace @{description="Учетка включена $dateStr"}
         }
         #Почта
         function Send-MailMess {
